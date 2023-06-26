@@ -111,19 +111,30 @@ plt.figure()
 #     plt.plot(combined_audio[press-pre:press+post])
 plt.plot(combined_audio[key_indexes[0]-pre:key_indexes[0]+post])
 plt.axvline(x=pre, color='red', linestyle='--')
-plt.show(block = False)
+plt.show(block=False)
+
+for press in key_strokes:
+    press_index = int(press[1]*RATE)
+    name = "output\\" + time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime()) + "_" + press[0] + ".wav"
+    name="output\\2023-06-26_14-53-13_d.wav"
+    print(name)
+    wf = wave.open(name, "wb")
+    wf.setparams((CHANNELS, p.get_sample_size(FORMAT), RATE, 0, 'NONE', 'not compressed'))
+    audio_data = combined_audio[press_index-pre:press_index+post].astype(np.int16)
+    wf.writeframes(audio_data.tobytes())
+    wf.close()
 
 
-n_mfcc = 13  # Number of MFCC coefficients
-n_mels = 40  # Number of Mel filters
-fmin = 0     # Minimum frequency of the filterbank
-fmax = 300  # Maximum frequency of the filterbank
-hop_length = 64
+# n_mfcc = 13  # Number of MFCC coefficients
+# n_mels = 40  # Number of Mel filters
+# fmin = 0     # Minimum frequency of the filterbank
+# fmax = 300  # Maximum frequency of the filterbank
+# hop_length = 64
 
-mfcc = librosa.feature.mfcc(y=combined_audio[key_indexes[0]-pre:key_indexes[0]+post].astype(np.float32), sr=RATE, hop_length=hop_length, fmin=fmin, fmax=fmax, n_mels=n_mels, n_mfcc=n_mfcc)
-plt.figure(figsize = (10,4))
-librosa.display.specshow(mfcc, x_axis='time', vmax = 60)
-plt.colorbar()
-plt.title('MFCC')
-plt.tight_layout()
-plt.show()
+# mfcc = librosa.feature.mfcc(y=combined_audio[key_indexes[0]-pre:key_indexes[0]+post].astype(np.float32), sr=RATE, hop_length=hop_length, fmin=fmin, fmax=fmax, n_mels=n_mels, n_mfcc=n_mfcc)
+# plt.figure(figsize = (10,4))
+# librosa.display.specshow(mfcc, x_axis='time', vmax = 60)
+# plt.colorbar()
+# plt.title('MFCC')
+# plt.tight_layout()
+# plt.show()
