@@ -6,13 +6,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import librosa
 import librosa.display
+from scipy import signal
 
 # Setting up settings for input audio
 CHUNK = 4096
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
-RATE = 44100
-RECORD_SECONDS = 5
+RATE = 44100*2
+RECORD_SECONDS = 100
 OUTPUT_FILENAME = "output.wav"
 INPUT_DEVICE = "Microphone (Realtek(R) Audio Codec with THX Spatial Audio)"
 
@@ -93,6 +94,31 @@ wf.close()
 
 print(f"Audio saved to {OUTPUT_FILENAME}.")
 
+pre  = 4096
+post = 4096
+
+key_count = {}
+for press in key_strokes:
+    press_index = int(press[1]*RATE)
+    press_key = press[0]
+    
+    name = ""
+    local_time = time.localtime()
+    if press_key in key_count:
+        name = "output\\" + time.strftime("%Y-%m-%d_%H-%M-%S", local_time) + "_" + press_key + f"_({key_count[press_key]})" +  ".wav"
+        key_count[press_key] += 1
+    else:
+        name = "output\\" + time.strftime("%Y-%m-%d_%H-%M-%S", local_time) + "_" + press_key + "_(0)" + ".wav"
+        key_count[press_key] = 1
+
+    print(name)
+    wf = wave.open(name, "wb")
+    wf.setparams((CHANNELS, p.get_sample_size(FORMAT), RATE, 0, 'NONE', 'not compressed'))
+    audio_data = combined_audio[press_index-pre:press_index+post].astype(np.int16)
+    wf.writeframes(audio_data.tobytes())
+    wf.close()
+
+
 key_indexes = [int(i[1]*RATE) for i in key_strokes]
 
 plt.figure()
@@ -104,25 +130,12 @@ plt.ylabel('Amplitude')
 plt.title('Audio Stream')
 plt.show(block=False)
 
-pre = 2048
-post = 2048
 plt.figure()
 # for press in key_indexes:
 #     plt.plot(combined_audio[press-pre:press+post])
 plt.plot(combined_audio[key_indexes[0]-pre:key_indexes[0]+post])
 plt.axvline(x=pre, color='red', linestyle='--')
 plt.show(block=False)
-
-for press in key_strokes:
-    press_index = int(press[1]*RATE)
-    name = "output\\" + time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime()) + "_" + press[0] + ".wav"
-    name="output\\2023-06-26_14-53-13_d.wav"
-    print(name)
-    wf = wave.open(name, "wb")
-    wf.setparams((CHANNELS, p.get_sample_size(FORMAT), RATE, 0, 'NONE', 'not compressed'))
-    audio_data = combined_audio[press_index-pre:press_index+post].astype(np.int16)
-    wf.writeframes(audio_data.tobytes())
-    wf.close()
 
 
 # n_mfcc = 13  # Number of MFCC coefficients
@@ -138,3 +151,20 @@ for press in key_strokes:
 # plt.title('MFCC')
 # plt.tight_layout()
 # plt.show()
+
+plot_cnt = 5
+# plt.figure()
+fig, axes = plt.subplots(plot_cnt,1)
+for i in range(plot_cnt):
+    window_size = int(RATE * 1)  # Window size in samples (e.g., 100 ms)
+
+    frequencies, times, spectrogram = signal.spectrogram(combined_audio[key_indexes[i]-pre:key_indexes[i]+post], fs=RATE, nperseg=64)
+
+    # Plot the spectrogram
+    # plt.figure()
+    axes[i].pcolormesh(times, frequencies, np.log10(spectrogram))
+    # plt.colorbar(label='Power Spectral Density (dB/Hz)')
+    # axes[i].set_xlabel('Time (s)')
+    # axes[i].set_ylabel('Frequency (Hz)')
+    # axes[i].set_title('FFT Spectrogram')
+plt.show(block = True)
